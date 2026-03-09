@@ -59,7 +59,7 @@ def search_movies(query: str):
     }
 
     try:
-        response = requests.get(url, params=params, timeout=5)
+        response = requests.get(url, params=params, timeout=2)
         response.raise_for_status()
         data = response.json()
 
