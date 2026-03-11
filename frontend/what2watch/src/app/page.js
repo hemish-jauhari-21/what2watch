@@ -1,26 +1,69 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 
 export default function Home() {
+
   const [query, setQuery] = useState("");
-  const [results, setResults] = useState([]);
+  const [movies, setMovies] = useState([]);
+  const [page, setPage] = useState(1);
 
   async function searchMovies() {
     if (!query) return;
 
-    try {
-      const res = await fetch(
-        `http://127.0.0.1:8000/search?query=${query}`
+    const res = await fetch(
+      `http://127.0.0.1:8000/search?query=${query}`
+    );
+
+    const data = await res.json();
+    setMovies(data.results);
+  }
+
+  async function loadPopularMovies() {
+
+    const res = await fetch(
+      `http://127.0.0.1:8000/movies/popular?page=${page}`
+    );
+
+    const data = await res.json();
+
+    setMovies((prev) => {
+
+      const combined = [...prev, ...data.results];
+
+      // Remove duplicates using movie.id
+      const unique = Array.from(
+        new Map(combined.map(movie => [movie.id, movie])).values()
       );
 
-      const data = await res.json();
-      setResults(data.results);
-    } catch (error) {
-      console.error("Search error:", error);
-    }
+      return unique;
+    });
+
   }
+
+  useEffect(() => {
+    loadPopularMovies();
+  }, [page]);
+
+  useEffect(() => {
+
+    function handleScroll() {
+
+      if (
+        window.innerHeight + document.documentElement.scrollTop + 1 >=
+        document.documentElement.scrollHeight
+      ) {
+        setPage((prev) => prev + 1);
+      }
+
+    }
+
+    window.addEventListener("scroll", handleScroll);
+
+    return () => window.removeEventListener("scroll", handleScroll);
+
+  }, []);
 
   return (
     <div className="min-h-screen bg-black text-white p-10">
@@ -29,7 +72,6 @@ export default function Home() {
         What2Watch 🎬
       </h1>
 
-      {/* Search */}
       <div className="flex justify-center gap-3 mb-10">
         <input
           className="border border-gray-600 bg-black p-2 rounded w-80"
@@ -47,10 +89,9 @@ export default function Home() {
         </button>
       </div>
 
-      {/* Movie Grid */}
-      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-6">
+      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-6">
 
-        {results.map((movie) => {
+        {movies.map((movie) => {
 
           const poster = movie.poster_path
             ? `https://image.tmdb.org/t/p/w500${movie.poster_path}`
@@ -67,12 +108,8 @@ export default function Home() {
                   className="rounded-lg"
                 />
 
-                <h2 className="mt-2 text-sm font-semibold">
+                <p className="mt-2 text-sm">
                   {movie.title}
-                </h2>
-
-                <p className="text-gray-400 text-xs">
-                  {movie.release_date}
                 </p>
 
               </div>

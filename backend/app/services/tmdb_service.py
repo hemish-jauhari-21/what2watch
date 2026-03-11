@@ -116,3 +116,76 @@ def get_movie_details(movie_id: int):
     except requests.exceptions.RequestException:
         # Fallback to mock movie details
         return MOCK_MOVIE_DETAILS
+    
+
+# ---------------------------------------------------
+# STREAMING PROVIDERS
+# ---------------------------------------------------
+
+def get_streaming_providers(movie_id: int):
+
+    api_key = os.getenv("TMDB_API_KEY")
+
+    if not api_key:
+        return []
+
+    url = f"{TMDB_BASE_URL}/movie/{movie_id}/watch/providers"
+
+    params = {
+        "api_key": api_key
+    }
+
+    try:
+        response = requests.get(url, params=params, timeout=5)
+        response.raise_for_status()
+
+        data = response.json()
+
+        providers = data.get("results", {}).get("IN", {}).get("flatrate", [])
+
+        return [
+            {
+                "name": p["provider_name"],
+                "logo": p["logo_path"]
+            }
+            for p in providers
+        ]
+
+    except requests.exceptions.RequestException:
+        return []
+
+
+# ---------------------------------------------------
+# Popular movies homepage
+# ---------------------------------------------------
+
+def get_popular_movies(page: int = 1):
+    api_key = os.getenv("TMDB_API_KEY")
+
+    url = f"{TMDB_BASE_URL}/movie/popular"
+
+    params = {
+        "api_key": api_key,
+        "language": "en-US",
+        "page": page
+    }
+
+    try:
+        response = requests.get(url, params=params, timeout=5)
+        response.raise_for_status()
+
+        data = response.json()
+
+        return [
+            {
+                "id": movie["id"],
+                "title": movie["title"],
+                "release_date": movie.get("release_date"),
+                "overview": movie.get("overview"),
+                "poster_path": movie.get("poster_path")
+            }
+            for movie in data.get("results", [])
+        ]
+
+    except requests.exceptions.RequestException:
+        return MOCK_SEARCH_RESULTS
