@@ -12,12 +12,42 @@ export default function Home() {
   async function searchMovies() {
     if (!query) return;
 
+    const token = localStorage.getItem("token");
+
     const res = await fetch(
-      `http://127.0.0.1:8000/search?query=${query}`
+      `http://127.0.0.1:8000/search?query=${query}`,
+      {
+        headers: {
+          Authorization: token ? `Bearer ${token}` : "",
+        },
+      }
     );
 
     const data = await res.json();
     setMovies(data.results);
+  }
+
+  async function addToWatchlist(movie) {
+    const token = localStorage.getItem("token");
+
+    if (!token) {
+      alert("Please login first");
+      return;
+    }
+
+    await fetch("http://127.0.0.1:8000/watchlist/add", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        movie_id: movie.id,
+        title: movie.title,
+      }),
+    });
+
+    alert("Added to watchlist ✅");
   }
 
   async function loadPopularMovies() {
@@ -67,6 +97,13 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-black text-white p-10">
+      <div className="flex justify-end p-4">
+        <Link href="/login">
+          <button className="bg-white text-black px-4 py-2 rounded">
+            Login
+          </button>
+        </Link>
+      </div>
 
       <h1 className="text-4xl font-bold text-center mb-8">
         What2Watch 🎬
@@ -111,6 +148,16 @@ export default function Home() {
                 <p className="mt-2 text-sm">
                   {movie.title}
                 </p>
+
+                <button
+                  onClick={(e) => {
+                    e.preventDefault(); // prevents link navigation
+                    addToWatchlist(movie);
+                  }}
+                  className="mt-2 bg-white text-black text-xs px-2 py-1 rounded"
+                >
+                  + Watchlist
+                </button>
 
               </div>
 
