@@ -8,6 +8,7 @@ export default function Home() {
   const [query, setQuery] = useState("");
   const [movies, setMovies] = useState([]);
   const [page, setPage] = useState(1);
+  const [message, setMessage] = useState("");
 
   async function searchMovies() {
     if (!query) return;
@@ -31,23 +32,54 @@ export default function Home() {
     const token = localStorage.getItem("token");
 
     if (!token) {
-      alert("Please login first");
+      setMessage("Please login first ⚠️");
+      setTimeout(() => setMessage(""), 2000);
       return;
     }
 
-    await fetch("http://127.0.0.1:8000/watchlist/add", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({
-        movie_id: movie.id,
-        title: movie.title,
-      }),
-    });
+    try {
+      // 🔥 First check existing watchlist
+      const res1 = await fetch("http://127.0.0.1:8000/watchlist", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
 
-    alert("Added to watchlist ✅");
+      const existing = await res1.json();
+
+      const alreadyExists = existing.some(
+        (m) => m.movie_id === movie.id
+      );
+
+      if (alreadyExists) {
+        setMessage("Already in watchlist ⚠️");
+        setTimeout(() => setMessage(""), 2000);
+        return;
+      }
+
+      // 🔥 Add movie
+      const res = await fetch(
+        `http://127.0.0.1:8000/watchlist/add?movie_id=${movie.id}&title=${encodeURIComponent(movie.title)}&poster_path=${movie.poster_path}`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (!res.ok) {
+        throw new Error("Failed");
+      }
+
+      setMessage("Added to watchlist ✅");
+      setTimeout(() => setMessage(""), 2000);
+
+    } catch (err) {
+      console.error(err);
+      setMessage("Error adding to watchlist ❌");
+      setTimeout(() => setMessage(""), 2000);
+    }
   }
 
   async function loadPopularMovies() {
@@ -97,10 +129,26 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-black text-white p-10">
+      {message && (
+        <div className={`fixed top-5 right-5 px-4 py-2 rounded shadow-lg z-50
+    ${message.includes("Error") ? "bg-red-600" :
+            message.includes("Already") ? "bg-yellow-500 text-black" :
+              "bg-green-600 text-white"}
+  `}>
+          {message}
+        </div>
+      )}
+
       <div className="flex justify-end p-4">
         <Link href="/login">
           <button className="bg-white text-black px-4 py-2 rounded">
             Login
+          </button>
+        </Link>
+
+        <Link href="/watchlist">
+          <button className="bg-red-600 px-4 py-2 rounded ml-2">
+            Watchlist
           </button>
         </Link>
       </div>

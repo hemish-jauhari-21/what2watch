@@ -18,7 +18,6 @@ export default function MoviePage() {
       const res = await fetch(
         `http://127.0.0.1:8000/movie/${id}`
       );
-
       const data = await res.json();
       setMovie(data);
 
@@ -26,13 +25,44 @@ export default function MoviePage() {
       const res2 = await fetch(
         `http://127.0.0.1:8000/movie/${id}/providers`
       );
-
       const providerData = await res2.json();
       setProviders(providerData.providers);
     }
 
     if (id) fetchMovie();
   }, [id]);
+
+  // ✅ FIXED FUNCTION
+  async function addToWatchlist() {
+    const token = localStorage.getItem("token");
+
+    if (!token) {
+      alert("Please login first");
+      return;
+    }
+
+    try {
+      const res = await fetch(
+        `http://127.0.0.1:8000/watchlist/add?movie_id=${movie.id}&title=${encodeURIComponent(movie.title)}&poster_path=${movie.poster_path}`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (!res.ok) {
+        throw new Error("Failed to add");
+      }
+
+      alert("Added to watchlist ✅");
+
+    } catch (err) {
+      console.error(err);
+      alert("Something went wrong ❌");
+    }
+  }
 
   if (!movie) {
     return (
@@ -74,6 +104,8 @@ export default function MoviePage() {
           <p>⭐ Rating: {movie.rating}</p>
           <p>⏱ Runtime: {movie.runtime} min</p>
           <p>🎭 Genres: {movie.genres?.join(", ")}</p>
+
+          {/* 🎬 Providers */}
           <div className="mt-8">
 
             <h2 className="text-2xl font-semibold mb-4">
@@ -86,7 +118,7 @@ export default function MoviePage() {
               </p>
             )}
 
-            <div className="flex gap-4">
+            <div className="flex gap-4 flex-wrap">
 
               {providers.map((p) => {
 
@@ -114,16 +146,12 @@ export default function MoviePage() {
 
           </div>
 
+          {/* ✅ WATCHLIST BUTTON */}
           <button
-            onClick={async () => {
-              await fetch("http://127.0.0.1:8000/watchlist/add?movie_id=" + movie.id + "&title=" + movie.title, {
-                method: "POST"
-              });
-              alert("Added to Watchlist");
-            }}
-            className="mt-6 bg-red-600 px-4 py-2 rounded"
+            onClick={addToWatchlist}
+            className="mt-6 bg-red-600 hover:bg-red-700 px-6 py-2 rounded font-semibold"
           >
-            Add to Watchlist
+            + Watchlist
           </button>
 
         </div>

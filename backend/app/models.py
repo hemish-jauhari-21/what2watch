@@ -18,6 +18,6 @@ class Watchlist(Base):
     user_id = Column(Integer, ForeignKey("users.id"))
     movie_id = Column(Integer)
     movie_title = Column(String)
-    poster = Column(String)
+    poster_path = Column(String)
 
     user = relationship("User")
